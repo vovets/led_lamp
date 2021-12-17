@@ -1,0 +1,9 @@
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.sch-bak
+*.FCStd1
+_autosave-*.kicad_pcb
+hw/pcb/gerber/
+cmake-build-*/
+.idea/
