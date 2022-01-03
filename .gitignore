@@ -4,6 +4,6 @@
 *.sch-bak
 *.FCStd1
 _autosave-*.kicad_pcb
-hw/pcb/gerber/
+gerber/
 cmake-build-*/
 .idea/

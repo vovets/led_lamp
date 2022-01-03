@@ -1,0 +1,8 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP FDN306P
+D -2.6A Id, -12V Vds, P-Channel MOSFET, 1.8V Specified, SOT-23
+K P-Channel MOSFET
+$ENDCMP
+#
+#End Doc Library
