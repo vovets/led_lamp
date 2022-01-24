@@ -1,6 +1,6 @@
 #include "timers.h"
 #include "blinker.h"
-#include "clocks_etc.h"
+#include "lib/clocks_etc.h"
 #include "debug.h"
 #include "macro_utils.h"
 
@@ -52,9 +52,9 @@ void setAlarm(void) {
 
 int main(void)
 {
-    setupClockEtc();
+    setupClock();
     setupPins();
-    stInit();
+    tmInit();
     setAlarm();
     stEnableClock();
     sei();

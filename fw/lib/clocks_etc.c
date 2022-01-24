@@ -1,5 +1,5 @@
 #include "clocks_etc.h"
-#include "macro_utils.h"
+#include <lib/macro_utils.h>
 
 #include <avr/io.h>
 #include <avr/power.h>
@@ -13,7 +13,7 @@
 
 #define CLK_DIV LL_CAT(CLK_DIV_, F_CPU)
 
-void setupClockEtc(void) {
+void setupClock(void) {
     clock_prescale_set(CLK_DIV);
     // disable analog comparator
     ACSR |= _BV(ACD);

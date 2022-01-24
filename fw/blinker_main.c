@@ -1,6 +1,6 @@
 #include "timers.h"
 #include "blinker.h"
-#include "clocks_etc.h"
+#include "lib/clocks_etc.h"
 #include "debug.h"
 
 #include <stdint.h>
@@ -48,9 +48,9 @@ void blinkerFinish(Blinker* blinker, void* arg) {
 
 int main(void)
 {
-    setupClockEtc();
+    setupClock();
     setupPins();
-    stInit();
+    tmInit();
     setupBlinkers();
     startBlinkers();
     sei();

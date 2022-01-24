@@ -1,8 +1,9 @@
 #pragma once
 
+#include <lib/parameters.h>
+
 #include <stdint.h>
 
-#define ADC_FILTER_BUFFER_SIZE_LOG 7
 #define ADC_FILTER_BUFFER_SIZE (1U<<ADC_FILTER_BUFFER_SIZE_LOG)
 
 typedef struct AdcFilter {

@@ -12,3 +12,5 @@ void pwmDisable(void);
 void pwmSet(uint8_t v);
 
 bool pwmIsEnabled(void);
+
+uint8_t pwmGet(void);

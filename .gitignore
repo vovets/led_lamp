@@ -7,3 +7,4 @@ _autosave-*.kicad_pcb
 gerber/
 cmake-build-*/
 .idea/
+build/

@@ -1,6 +1,6 @@
 #include "timers.h"
 #include "blinker.h"
-#include "clocks_etc.h"
+#include "lib/clocks_etc.h"
 #include "debug.h"
 
 #include <stdint.h>
@@ -11,7 +11,7 @@
 #include <avr/cpufunc.h>
 
 
-Blinker blinker;
+Blinker onOffBlinker;
 Timer timer;
 
 #define PIN PB4
@@ -27,24 +27,24 @@ void sleep(void) {
 }
 
 void setupBlinker(void) {
-    blinkerSetup(&blinker, 3, ST_MS2TICKS(100), ST_MS2TICKS(150), PIN);
+    blinkerSetup(&onOffBlinker, 3, ST_MS2TICKS(100), ST_MS2TICKS(150), PIN);
 }
 
 void startBlinker(void) {
-    blinkerStart(&blinker, 0, 0);
+    blinkerStart(&onOffBlinker, 0, 0);
 }
 
 void startTimer(void* arg) {
-    stSetTimer(&timer, ST_MS2TICKS(2000), startTimer, 0);
+    tmSetTimer(&timer, ST_MS2TICKS(2000), startTimer, 0);
     startBlinker();
 }
     
 
 int main(void)
 {
-    setupClockEtc();
+    setupClock();
     setupPins();
-    stInit();
+    tmInit();
     setupBlinker();
     startTimer(0);
     sei();

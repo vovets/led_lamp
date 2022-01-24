@@ -1,6 +1,6 @@
 #include "timers.h"
 #include "blinker.h"
-#include "clocks_etc.h"
+#include "lib/clocks_etc.h"
 #include "button.h"
 #include "debouncer.h"
 #include "debug.h"
@@ -28,7 +28,7 @@ void initState(void) {
     state.on = false;
 }
 
-Blinker blinker;
+Blinker onOffBlinker;
 
 static void shortPress(void);
 static void longPress(void);
@@ -46,18 +46,18 @@ static void setupPCINT(void) {
 }
 
 static void setupBlinker() {
-    blinkerSetup(&blinker, 0, ST_MS2TICKS(40), ST_MS2TICKS(60), LED_PIN);
+    blinkerSetup(&onOffBlinker, 0, ST_MS2TICKS(40), ST_MS2TICKS(60), LED_PIN);
 }
 
 static void startBlinker() {
-    if (!blinkerIsActive(&blinker)) {
-        blinkerStart(&blinker, 0, 0);
+    if (!blinkerIsActive(&onOffBlinker)) {
+        blinkerStart(&onOffBlinker, 0, 0);
     }
 }
 
 static void stopBlinker() {
-    if (blinkerIsActive(&blinker)) {
-        blinkerStop(&blinker);
+    if (blinkerIsActive(&onOffBlinker)) {
+        blinkerStop(&onOffBlinker);
     }
 }
 
@@ -126,10 +126,10 @@ static void sleep(void) {
 int main(void)
 {
     initState();
-    setupClockEtc();
+    setupClock();
     setupPins();
     debugPinInit();
-    stInit();
+    tmInit();
     btnInit(BUTTON_PIN, buttonEvent);
     setupPCINT();
     setupBlinker();

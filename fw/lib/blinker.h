@@ -1,7 +1,6 @@
 #pragma once
 
 #include "timers.h"
-#include "func.h"
 
 #include <stdint.h>
 

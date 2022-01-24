@@ -1,13 +1,13 @@
+#include <lib/parameters.h>
 #include "button.h"
-#include "timers.h"
+#include <lib/timers.h>
 #include "debug.h"
 
 #include <avr/io.h>
 #include <avr/cpufunc.h>
 
-#ifndef BTN_DOWN_IS_PIN_LOW
-#define BTN_DOWN_IS_PIN_LOW 0
-#endif
+
+#define BTN_LONG_PRESS_TICKS ST_MS2TICKS(BTN_LONG_PRESS_MS)
 
 typedef struct BtnState {
     BtnFunc func;
@@ -16,7 +16,7 @@ typedef struct BtnState {
     Timer longPress;
 } BtnState;
 
-BtnState btnState;
+static BtnState btnState;
 
 static void btnDown(void);
 static void btnUp(void);
@@ -37,6 +37,7 @@ void btnInit(uint8_t pin, BtnFunc func) {
 }
 
 void btnToggle(bool stateNow) {
+    debugTrace2(debugBtnToggle, stateNow);
     if (btnState.state == stateNow) {
         return;
     }
@@ -49,17 +50,17 @@ void btnToggle(bool stateNow) {
 }
 
 static void btnDown() {
-    if (stIsTimerSet(&btnState.longPress)) {
+    if (tmIsTimerSet(&btnState.longPress)) {
         return;
     }
-    stSetTimer(&btnState.longPress, BTN_LONG_PRESS_TICKS, btnLongPressExpired, 0);
+    tmSetTimer(&btnState.longPress, BTN_LONG_PRESS_TICKS, btnLongPressExpired, 0);
 }
 
 static void btnUp() {
-    if (!stIsTimerSet(&btnState.longPress)) {
+    if (!tmIsTimerSet(&btnState.longPress)) {
         return;
     }
-    stCancelTimer(&btnState.longPress);
+    tmCancelTimer(&btnState.longPress);
     btnState.func(BtnShortPress);
 }
 

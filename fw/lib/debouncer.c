@@ -1,8 +1,12 @@
+#include <lib/parameters.h>
 #include "debouncer.h"
 #include "timers.h"
 #include "button.h"
-#include "stack_check.h"
+#include <lib/stack_check.h>
 #include "debug.h"
+#include "event.h"
+#include <lib/event_queue.h>
+#include "loop.h"
 
 #include <assert.h>
 
@@ -16,27 +20,33 @@ typedef struct Debouncer {
     volatile uint8_t counter;
 } BtnDebouncer;
 
-BtnDebouncer debouncer;
+static BtnDebouncer debouncer;
 
 static void dbnTimerExpired(void*);
 static void dbnStartScan(bool state);
 static void dbnStopScan(void);
 
+void handlePinChange(const Event* e) {
+    dbnStartScan(btnRead());
+    dbnEnable();
+}
+
 static bool dbnIsScanActive(void) {
     return debouncer.counter;
 }
 
-ISR(PCINT0_vect) {
-    stackCheck();
-    dbnStartScan(btnRead());
-}
-
 void dbnEnable(void) {
+    GIFR |= _BV(PCIF);
     GIMSK |= _BV(PCIE);
 }
 
+void dbnDisable(void) {
+    GIMSK &= ~_BV(PCIE);
+    GIFR |= _BV(PCIF);
+}
+
 static inline void dbnSetTimer(void) {
-    stSetTimer(&debouncer.timer, DEBOUNCER_DELAY, dbnTimerExpired, 0);
+    tmSetTimer(&debouncer.timer, DEBOUNCER_DELAY, dbnTimerExpired, 0);
 }
 
 static void dbnStartScan(bool state) {
@@ -49,25 +59,33 @@ static void dbnStartScan(bool state) {
 }
 
 static void dbnStopScan(void) {
-    if (stIsTimerSet(&debouncer.timer)) {
-        stCancelTimer(&debouncer.timer);
+    if (tmIsTimerSet(&debouncer.timer)) {
+        tmCancelTimer(&debouncer.timer);
     }
     debouncer.counter = 0;
 }
 
 static void dbnTimerExpired(void* arg) {
     bool state = btnRead();
-
     if (state != debouncer.state) {
         dbnStartScan(state);
         return;
     }
 
     --debouncer.counter;
+    debugTrace2(debugDbnCounter, debouncer.counter);
     if (!debouncer.counter) {
         btnToggle(debouncer.state);
         return;
     }
 
     dbnSetTimer();
+}
+
+ISR(PCINT0_vect) {
+    stackCheck();
+    dbnDisable();
+    Event e;
+    e.type = evPinChange;
+    eqPutI(&e);
 }

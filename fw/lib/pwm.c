@@ -1,5 +1,7 @@
-#include "pwm.h"
-#include "macro_utils.h"
+#include <lib/parameters.h>
+#include <lib/pwm.h>
+#include <lib/macro_utils.h>
+#include "debug.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -7,14 +9,15 @@
 
 #define PWM_DIV_0       0
 #define PWM_DIV_1       1
+#define PWM_DIV_2       2
+#define PWM_DIV_4       3
+#define PWM_DIV_8       4
 #define PWM_DIV_512     10
 #define PWM_DIV_1024    11
 #define PWM_DIV_2048    12
 #define PWM_DIV_4096    13
 #define PWM_DIV_8192    14
 #define PWM_DIV_16384   15
-
-#define PWM_FREQ_DIVIDER 1
 
 #define PWM_DIV_TO_CS(DIVISOR) LL_CAT(PWM_DIV_, DIVISOR)
 #define PWM_CS_MASK (_BV(CS13) | _BV(CS12) | _BV(CS11) | _BV(CS10))
@@ -73,7 +76,12 @@ void pwmDisable(void) {
 }
 
 void pwmSet(uint8_t v) {
+    debugTrace2(debugPwm, v);
     OCR1A = v & PWM_OC_MASK;
+}
+
+uint8_t pwmGet(void) {
+    return OCR1A & PWM_OC_MASK;
 }
 
 bool pwmIsEnabled(void) {

@@ -1,4 +1,4 @@
-#include "blinker.h"
+#include <lib/blinker.h>
 #include "debug.h"
 
 #include <assert.h>
@@ -17,7 +17,7 @@ static void blinkerState_1(Blinker* blinker);
 static void blinkerState_0(Blinker* blinker) {
     // this function is called when state 0 ends
     blinker->state = blinkerState_1;
-    stSetTimer(&blinker->timer, blinker->state_1_time, blinkerTimerExpired, blinker);
+    tmSetTimer(&blinker->timer, blinker->state_1_time, blinkerTimerExpired, blinker);
     blinker->ledFunc(blinker->mode == BlinkerModeOnThenOff ? false : true);
 }
 
@@ -35,7 +35,7 @@ static void blinkerState_1(Blinker* blinker) {
     }
     blinker->state = blinkerState_0;
     blinker->ledFunc(blinker->mode == BlinkerModeOnThenOff ? true : false);
-    stSetTimer(&blinker->timer, blinker->state_0_time, blinkerTimerExpired, blinker);
+    tmSetTimer(&blinker->timer, blinker->state_0_time, blinkerTimerExpired, blinker);
 }
 
 void blinkerStart(Blinker* blinker, BlinkerFunc func, void* arg) {
@@ -44,12 +44,12 @@ void blinkerStart(Blinker* blinker, BlinkerFunc func, void* arg) {
     blinker->state = blinkerState_0;
     blinker->iterationsLeft = (blinker->iterations ? blinker->iterations : 1);
     blinker->ledFunc(blinker->mode == BlinkerModeOnThenOff ? true : false);
-    stSetTimer(&blinker->timer, blinker->state_0_time, blinkerTimerExpired, blinker);
+    tmSetTimer(&blinker->timer, blinker->state_0_time, blinkerTimerExpired, blinker);
 }
 
 void blinkerStop(Blinker* blinker) {
-    if (stIsTimerSet(&blinker->timer)) {
-        stCancelTimer(&blinker->timer);
+    if (tmIsTimerSet(&blinker->timer)) {
+        tmCancelTimer(&blinker->timer);
         blinker->state = 0;
         blinker->ledFunc(blinker->mode == BlinkerModeOnThenOff ? false : true);
     }

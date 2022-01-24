@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
 project(led_lamp C)
 
 set(CMAKE_C_STANDARD 99)
@@ -33,27 +33,33 @@ function(add_freq_options target f_cpu st_freq_divider)
     target_compile_definitions(${target} PUBLIC -DF_CPU=${f_cpu} -DST_FREQ_DIVIDER=${st_freq_divider})
 endfunction()
 
+function(add_parameters_include target parameters_file_path)
+    target_compile_definitions(${target} PUBLIC -DPARAMETERS_FILE_PATH=${parameters_file_path})
+endfunction()
 
-add_executable(alarmist alarmist_main.c timers.c clocks_etc.c abort.c stack_check.c debug.c)
+include_directories(.)
+
+add_executable(alarmist alarmist_main.c lib/timers.c lib/clocks_etc.c lib/abort.c lib/stack_check.c debug.c)
 add_options(alarmist)
 add_freq_options(alarmist 1000000 1024)
 
-add_executable(blinker blinker_main.c blinker.c timers.c clocks_etc.c abort.c stack_check.c debug.c)
+add_executable(blinker blinker_main.c lib/blinker.c lib/timers.c lib/clocks_etc.c lib/abort.c lib/stack_check.c debug.c)
 add_options(blinker)
 add_freq_options(blinker ${F_CPU} ${ST_FREQ_DIVIDER})
 
-add_executable(sleeper sleeper_main.c blinker.c timers.c clocks_etc.c abort.c stack_check.c debug.c)
+add_executable(sleeper sleeper_main.c lib/blinker.c lib/timers.c lib/clocks_etc.c lib/abort.c lib/stack_check.c debug.c)
 add_options(sleeper)
 add_freq_options(sleeper ${F_CPU} ${ST_FREQ_DIVIDER})
 
-add_executable(adc_blinker adc_blinker_main.c adc.c adc_filter.c blinker.c timers.c clocks_etc.c abort.c stack_check.c)
+add_executable(adc_blinker adc_blinker_main.c lib/adc.c lib/adc_filter.c lib/blinker.c lib/timers.c lib/clocks_etc.c lib/abort.c lib/stack_check.c)
 add_options(adc_blinker)
 add_freq_options(adc_blinker ${F_CPU} ${ST_FREQ_DIVIDER})
 
-add_executable(deep_sleeper deep_sleeper_main.c blinker.c timers.c clocks_etc.c abort.c stack_check.c debug.c debouncer.c button.c)
+add_executable(deep_sleeper deep_sleeper_main.c lib/blinker.c lib/timers.c lib/clocks_etc.c lib/abort.c lib/stack_check.c debug.c lib/debouncer.c lib/button.c)
 add_options(deep_sleeper)
 add_freq_options(deep_sleeper 1000000 1024)
 
-add_executable(lamp lamp_main.c blinker.c alarm.c timers.c clocks_etc.c abort.c stack_check.c debug.c debouncer.c button.c pwm.c vcc_monitor.c adc.c adc_filter.c)
+add_executable(lamp lamp_main.c lib/blinker.c lib/sys_time.c lib/timers.c lib/clocks_etc.c lib/abort.c lib/stack_check.c debug.c lib/debouncer.c lib/button.c lib/pwm.c lib/vcc_monitor.c lib/adc.c lib/adc_filter.c lib/event_queue.c loop.c lib/timer_list.c lib/pwm_animator.c)
 add_options(lamp)
-add_freq_options(lamp 1000000 1024)
+add_freq_options(lamp 2000000 1024)
+add_parameters_include(lamp <lamp_parameters.h>)

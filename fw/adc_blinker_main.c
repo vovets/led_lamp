@@ -2,7 +2,7 @@
 #include "blinker.h"
 #include "adc.h"
 #include "adc_filter.h"
-#include "clocks_etc.h"
+#include "lib/clocks_etc.h"
 #include "debug.h"
 
 #include <avr/interrupt.h>
@@ -24,7 +24,7 @@ typedef struct AdcData {
 
 AdcData adcData;
 
-Blinker blinker;
+Blinker onOffBlinker;
 
 bool blinkerStarted;
 
@@ -39,13 +39,13 @@ void sleep(void) {
 }
 
 void setupBlinker(void) {
-    blinkerSetup(&blinker, 1, 100, 900, PIN);
+    blinkerSetup(&onOffBlinker, 1, 100, 900, PIN);
 }
 
 void blinkerFinished(Blinker* blinker, void* arg);
 
 void startBlinker(void) {
-    blinkerStart(&blinker, blinkerFinished, 0);
+    blinkerStart(&onOffBlinker, blinkerFinished, 0);
 }
 
 void blinkerFinished(Blinker* blinker, void* arg) {
@@ -59,7 +59,7 @@ void handleAdcFilteredResult(uint16_t result) {
 //        debugPrint(stNow(), result);
 //    }
     SysTimeDelta period = 125 + ((uint32_t)result * 375) / ADC_MAX;
-    blinkerSetup(&blinker, blinker.iterations, 100, period - 100, blinker.pin);
+    blinkerSetup(&onOffBlinker, onOffBlinker.iterations, 100, period - 100, onOffBlinker.pin);
     if (!blinkerStarted) {
         startBlinker();
         blinkerStarted = true;
@@ -89,17 +89,17 @@ void adcTimerAlarm(void* arg) {
 }
 
 void setAdcTimer(AdcData* data) {
-    stSetTimer(&data->timer, ADC_PERIOD, adcTimerAlarm, data);
+    tmSetTimer(&data->timer, ADC_PERIOD, adcTimerAlarm, data);
 }
 
 int main(void)
 {
-    setupClockEtc();
+    setupClock();
     setupPins();
     adcFilterInit(&adcData.filter);
     adcDataInit(&adcData);
     adcEnable();
-    stInit();
+    tmInit();
     setAdcTimer(&adcData);
     setupBlinker();
     stEnableClock();

@@ -1,29 +1,44 @@
 #include "debug.h"
-#include "timers.h"
+#include <lib/timers.h>
 
 #include <avr/io.h>
+#include <avr/cpufunc.h>
+#include <util/atomic.h>
 
 
 typedef struct DebugTraceEvent {
-    uintptr_t id;
+    DebugEventId id;
+    DebugEventData data;
     SysTimePoint time;
 } DebugTraceEvent;
 
 typedef struct DebugTraceBuffer {
+    uint32_t enabledEvents;
     uint8_t head;
     DebugTraceEvent buffer[DEBUG_TRACE_BUFFER_SIZE];
 } DebugTraceBuffer;
 
-DebugTraceBuffer buffer;
+static DebugTraceBuffer debugTraceBuffer;
 
-void debugTrace(uintptr_t id) {
-    DebugTraceEvent* e = &buffer.buffer[buffer.head];
-    e->id = id;
-    e->time = stNow();
-    buffer.head = (buffer.head + 1) % DEBUG_TRACE_BUFFER_SIZE;
+
+void debugTraceEnableIds(uint32_t ids) {
+    debugTraceBuffer.enabledEvents |= ids;
+}
+
+void debugTrace2(DebugEventId id, uintptr_t data) {
+    if (!(debugTraceBuffer.enabledEvents & bits(id))) {
+        return;
+    }
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        DebugTraceEvent *e = &debugTraceBuffer.buffer[debugTraceBuffer.head];
+        e->id = id;
+        e->data.uintptr = data;
+        e->time = stNow();
+        debugTraceBuffer.head = (debugTraceBuffer.head + 1) % DEBUG_TRACE_BUFFER_SIZE;
 //    if (!buffer.head) {
 //        abort();
 //    }
+    }
 }
 
 void debugPinInit(void) {
