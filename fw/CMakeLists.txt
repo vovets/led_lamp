@@ -20,7 +20,7 @@ endfunction()
 
 function(add_options target)
     target_compile_options(${target} PUBLIC -funsigned-char -funsigned-bitfields -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -Wall)
-    target_compile_options(${target} PUBLIC -Og -gdwarf-4 -g3)
+    target_compile_options(${target} PUBLIC -Os -gdwarf-4 -g3)
     target_compile_options(${target} PUBLIC -mmcu=attiny85)
     target_link_libraries(${target} PUBLIC -mmcu=attiny85 -Wl,-Map="${target}.map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -Wl,--defsym=__heap_end=__heap_start)
     #target_link_libraries(${target} PUBLIC -mmcu=attiny85 -Wl,-Map="${target}.map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -Wl,--verbose)

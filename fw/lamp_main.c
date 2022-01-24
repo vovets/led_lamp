@@ -22,7 +22,7 @@
 #define LED_ON_PIN         PB3
 #define REF_ON_PIN         PB4
 #define LED_ON_IS_HIGH true
-#define LOW_VOLTAGE_BLINK_COUNTER_INIT 5
+#define LOW_VOLTAGE_BLINK_PERIOD_S 60
 
 typedef BtnFunc StateFunc;
 
@@ -165,7 +165,7 @@ static void checkLowVoltage(uint16_t mV) {
         if (state.lowVoltageBlinkCounter) {
             --state.lowVoltageBlinkCounter;
         } else {
-            state.lowVoltageBlinkCounter = LOW_VOLTAGE_BLINK_COUNTER_INIT;
+            state.lowVoltageBlinkCounter = (LOW_VOLTAGE_BLINK_PERIOD_S * 1000UL) / VCC_MONITOR_PERIOD_MS;
             vccmBlinkerSetup(3);
             blinkerStart(&vccmBlinker, &vccmBlinkerFinished, (void*)0);
         }
@@ -209,6 +209,7 @@ static void turnOn(void) {
 static void turnOff_1(void) {
     setState(StateOff);
     vccmDisable();
+    state.lowVoltageBlinkCounter = 0;
     stopBlinker();
     led(false);
     ref(false);
