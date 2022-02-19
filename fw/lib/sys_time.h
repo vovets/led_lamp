@@ -26,6 +26,8 @@ SysTimePoint stNow(void);
 
 SysTimePoint stNowI(void);
 
+void stSetAlarmAt(SysTimePoint t);
+
 void stSetAlarmAtI(SysTimePoint t);
 
 void stCancelAlarm(void);

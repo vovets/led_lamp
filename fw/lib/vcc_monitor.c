@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <lib/assert_.h>
 #include <lib/vcc_monitor.h>
 #include <lib/timers.h>
 #include <lib/adc.h>
@@ -27,14 +27,14 @@ void vccmEnable(void) {
 }
 
 void vccmStart(VccmFunc func) {
-    assert(func);
+    assert_(func);
     vccMonitor.func = func;
     vccMonitor.iterationsLeft = ADC_FILTER_BUFFER_SIZE;
     adcStartConversion();
 }
 
 void vccmContinue(VccmFunc func) {
-    assert(func);
+    assert_(func);
     vccMonitor.func = func;
     vccMonitor.iterationsLeft = ADC_FILTER_BUFFER_SIZE;
     tmSetTimer(
@@ -67,7 +67,7 @@ static void vccmTimerAlarm(void* arg) {
     adcStartConversion();
 }
 
-void handleAdc(const Event* e) {
+void handleAdc(Event* e) {
     adcFilterAdd(&vccMonitor.filter, e->adc.value);
     --vccMonitor.iterationsLeft;
 

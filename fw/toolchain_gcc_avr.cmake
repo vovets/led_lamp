@@ -3,7 +3,7 @@ set(CMAKE_SYSTEM_PROCESSOR AVR)
 
 set(TRIPLE avr)
 #set(TOOLCHAIN_PREFIX /usr)
-set(TOOLCHAIN_PREFIX /home/vovka/opt/avr8-gnu-toolchain-linux_x86_64)
+set(TOOLCHAIN_PREFIX /home/vovka/opt/avr-gcc-11.1.0-x64-linux)
 set(TOOLCHAIN_BIN ${TOOLCHAIN_PREFIX}/bin)
 
 # Without that flag CMake is not able to pass test compilation check

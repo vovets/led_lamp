@@ -1,21 +1,19 @@
-#include "timers.h"
-#include "blinker.h"
-#include "lib/clocks_etc.h"
-#include "button.h"
-#include "debouncer.h"
-#include "debug.h"
-#include "stack_check.h"
+#include <lib/timers.h>
+#include <lib/blinker.h>
+#include <lib/clocks_etc.h>
+#include <lib/button.h>
+#include <lib/debouncer.h>
+#include <lib/debug.h>
+#include <lib/loop.h>
+#include <lib/event_queue.h>
 
 #include <stdint.h>
-#include <assert.h>
 
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-#include <avr/cpufunc.h>
-#include <util/atomic.h>
 
 
-#define LED_PIN PB4
+#define LED_PIN PB3
 #define BUTTON_PIN PB2
 
 struct State {
@@ -40,13 +38,21 @@ static void setupPins(void) {
     DIDR0 = 0x1FU & ~_BV(BUTTON_PIN);
 }
 
+static void led(bool on) {
+    if (!on) {
+        PORTB |= _BV(LED_PIN);
+    } else {
+        PORTB &= ~_BV(LED_PIN);
+    }
+}
+
 static void setupPCINT(void) {
     PCMSK |= _BV(BUTTON_PIN);
     GIMSK |= _BV(PCIE);
 }
 
 static void setupBlinker() {
-    blinkerSetup(&onOffBlinker, 0, ST_MS2TICKS(40), ST_MS2TICKS(60), LED_PIN);
+    blinkerSetup(&onOffBlinker, BlinkerModeOnThenOff, 0, ST_MS2TICKS(40), ST_MS2TICKS(60), &led);
 }
 
 static void startBlinker() {
@@ -58,14 +64,6 @@ static void startBlinker() {
 static void stopBlinker() {
     if (blinkerIsActive(&onOffBlinker)) {
         blinkerStop(&onOffBlinker);
-    }
-}
-
-static void led(bool on) {
-    if (!on) {
-        PORTB |= _BV(LED_PIN);
-    } else {
-        PORTB &= ~_BV(LED_PIN);
     }
 }
 
@@ -111,16 +109,12 @@ static void longPress(void) {
     }
 }
 
-static void sleep(void) {
+uint8_t sleepMode(void) {
     if (stIsAlarmSet()) {
-        set_sleep_mode(SLEEP_MODE_IDLE);
+        return SLEEP_MODE_IDLE;
     } else {
-        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+        return SLEEP_MODE_PWR_DOWN;
     }
-    sleep_enable();
-    sei();
-    sleep_cpu();
-    sleep_disable();
 }
 
 int main(void)
@@ -129,6 +123,8 @@ int main(void)
     setupClock();
     setupPins();
     debugPinInit();
+    stInit();
+    eqInit();
     tmInit();
     btnInit(BUTTON_PIN, buttonEvent);
     setupPCINT();
@@ -136,8 +132,6 @@ int main(void)
     dbnEnable();
     sei();
     stEnableClock();
-    do {
-        sleep();
-    } while (1);
+    loop();
 }
 

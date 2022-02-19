@@ -5,10 +5,10 @@
 #include <lib/debouncer.h>
 #include <lib/pwm.h>
 #include <lib/vcc_monitor.h>
-#include "debug.h"
-#include <lib/stack_check.h>
-#include "loop.h"
+#include "lib/debug.h"
+#include <lib/loop.h>
 #include <lib/pwm_animator.h>
+#include <lib/event_queue.h>
 
 #include <stdint.h>
 #include <assert.h>
@@ -29,7 +29,9 @@ typedef BtnFunc StateFunc;
 static void stateOff(BtnEvent e);
 static void stateOn(BtnEvent e);
 static void stateSetup(BtnEvent e);
+
 static void vccMonitor(uint16_t mV);
+
 static void turnOff_1(void);
 
 typedef struct State {
@@ -301,6 +303,7 @@ int main(void)
     setupPins();
     pwmInit();
     stInit();
+    eqInit();
     tmInit();
     btnInit(SWITCH_PIN, buttonEvent);
     setupPCINT();

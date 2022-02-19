@@ -1,20 +1,20 @@
-#include "timers.h"
-#include "blinker.h"
-#include "adc.h"
-#include "adc_filter.h"
-#include "lib/clocks_etc.h"
-#include "debug.h"
+#include <lib/blinker.h>
+#include <lib/adc.h>
+#include <lib/adc_filter.h>
+#include <lib/clocks_etc.h>
+#include <lib/debug.h>
+#include <lib/loop.h>
+#include <lib/event_queue.h>
 
 #include <avr/interrupt.h>
-#include <avr/sleep.h>
-#include <util/delay_basic.h>
 
 #include <stdint.h>
-#include <assert.h>
 
-#define PIN PB4
+#define LED_PIN PB3
 #define ADC_PERIOD ST_MS2TICKS(1)
 #define ADC_MAX 1023
+#define LED_PERIOD_MIN ST_MS2TICKS(10)
+#define LED_PERIOD_MAX ST_MS2TICKS(250)
 
 typedef struct AdcData {
     AdcFilter filter;
@@ -29,17 +29,19 @@ Blinker onOffBlinker;
 bool blinkerStarted;
 
 void setupPins(void) {
-    DDRB |= _BV(PIN);
+    DDRB |= _BV(LED_PIN);
 }
 
-void sleep(void) {
-    sleep_enable();
-    sleep_cpu();
-    sleep_disable();
+uint8_t sleepMode(void) {
+    return SLEEP_MODE_IDLE;
 }
 
-void setupBlinker(void) {
-    blinkerSetup(&onOffBlinker, 1, 100, 900, PIN);
+void pin(bool on) {
+    if (on) {
+        PORTB |= _BV(LED_PIN);
+    } else {
+        PORTB &= ~_BV(LED_PIN);
+    }
 }
 
 void blinkerFinished(Blinker* blinker, void* arg);
@@ -58,34 +60,35 @@ void handleAdcFilteredResult(uint16_t result) {
 //    if (!counter) {
 //        debugPrint(stNow(), result);
 //    }
-    SysTimeDelta period = 125 + ((uint32_t)result * 375) / ADC_MAX;
-    blinkerSetup(&onOffBlinker, onOffBlinker.iterations, 100, period - 100, onOffBlinker.pin);
+    SysTimeDelta period = LED_PERIOD_MAX - ((int32_t)result * (LED_PERIOD_MAX - LED_PERIOD_MIN)) / ADC_MAX;
+    SysTimeDelta state0 = period / 2;
+    SysTimeDelta state1 = period - state0;
+    blinkerSetup(&onOffBlinker, BlinkerModeOnThenOff, 1, state0, state1, &pin);
     if (!blinkerStarted) {
         startBlinker();
         blinkerStarted = true;
     }
 }
 
-void conversionFinished(void* arg, uint16_t result) {
-    AdcData* data = (AdcData*)arg;
-    uint16_t filtered = adcFilterUpdate(&data->filter, result);
-    if (data->delayCycles) {
-        --data->delayCycles;
+void handleAdc(struct Event* e) {
+    uint16_t filtered = adcFilterUpdate(&adcData.filter, e->adc.value);
+    if (adcData.delayCycles) {
+        --adcData.delayCycles;
         return;
     }
     handleAdcFilteredResult(filtered);
 }
 
-void adcDataInit(AdcData* data) {
-    data->delayCycles = ADC_FILTER_BUFFER_SIZE;
+void adcDataInit() {
+    adcData.delayCycles = ADC_FILTER_BUFFER_SIZE;
+    adcFilterInit(&adcData.filter);
 }
 
 void setAdcTimer(AdcData* data);
 
 void adcTimerAlarm(void* arg) {
     setAdcTimer((AdcData*)arg);
-    adcStartConversion(conversionFinished, arg);
-//    debugPrint(stNow(), 0);
+    adcStartConversion();
 }
 
 void setAdcTimer(AdcData* data) {
@@ -96,17 +99,13 @@ int main(void)
 {
     setupClock();
     setupPins();
-    adcFilterInit(&adcData.filter);
     adcDataInit(&adcData);
     adcEnable();
+    eqInit();
+    stInit();
     tmInit();
     setAdcTimer(&adcData);
-    setupBlinker();
     stEnableClock();
     sei();
-    sleep();
-    while (1)
-    {
-        sleep();
-    }
+    loop();
 }

@@ -1,12 +1,10 @@
 #include <lib/parameters.h>
-#include "adc.h"
-#include "stack_check.h"
-#include "event.h"
-#include "event_queue.h"
-#include "debug.h"
-#include "macro_utils.h"
-
-#include <assert.h>
+#include <lib/adc.h>
+#include <lib/stack_check.h>
+#include <lib/event.h>
+#include <lib/event_queue.h>
+#include <lib/debug.h>
+#include <lib/macro_utils.h>
 
 #include <avr/io.h>
 #include <avr/interrupt.h>

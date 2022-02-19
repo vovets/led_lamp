@@ -1,16 +1,17 @@
 #include <lib/sys_time.h>
-#include "macro_utils.h"
-#include "stack_check.h"
-#include "event.h"
-#include "event_queue.h"
-#include "debug.h"
+#include <lib/macro_utils.h>
+#include <lib/stack_check.h>
+#include <lib/event.h>
+#include <lib/event_queue.h>
+#include <lib/debug.h>
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/cpufunc.h>
+#include <avr/wdt.h>
 #include <util/atomic.h>
+#include <util/delay.h>
 
-#include <assert.h>
 #include <string.h>
 
 
@@ -26,7 +27,7 @@
 #define ST_CS_BITS (ST_DIV_TO_CS(ST_FREQ_DIVIDER) << CS00)
 
 typedef struct SysTime {
-    uint8_t timeH;
+    volatile uint8_t timeH;
     uint8_t alarmH;
     uint16_t periodUs; // This is for debug purposes only, never used anywhere
 } SysTime;
@@ -34,39 +35,45 @@ typedef struct SysTime {
 // zero-init is ok
 static SysTime sysTime;
 
-static inline void disableOCInt(void) {
-    TIMSK &= ~_BV(OCIE0A);
-//    debugPin(false);
-}
+#define disableOCInt() do { TIMSK &= ~_BV(OCIE0A); } while (false)
+#define enableOCInt() do { TIMSK |= _BV(OCIE0A); } while (false)
 
-static inline void enableOCInt(void) {
-    TIMSK |= _BV(OCIE0A);
-//    debugPin(true);
-}
+// Use of = is intentional, writing zero will not reset any set flags nor set any.
+// If we use |= operator then compiler generates something like this:
+// 00000450 <stSetAlarmAtI>:
+// 450:   28 b7           in      r18, 0x38       ; 56
+// 452:   28 60           ori     r18, 0x08       ; 8
+// 454:   28 bf           out     0x38, r18       ; 56
+// But this fragment will unintentionally reset _any_ already set interrupt flags
+// with horrible consequences like rare and subtle bugs which are very hard to debug. :)
+#define clearOCIntFlag() do { TIFR = _BV(OCF0A); } while (false)
 
-static inline void clearOCIntFlag(void) {
-    TIFR |= _BV(OCF0A);
-}
+#define disableOVFInt() do { TIMSK &= ~_BV(TOIE0); } while (false)
+#define enableOVFInt() do { TIMSK |= _BV(TOIE0); } while (false)
+#define clearOVFIntFlag() do { TIFR = _BV(TOV0); } while (false)
+
+#define setOCRegister(V) do { OCR0A = (V); } while (false)
 
 static inline uint8_t OVFIntFlag(void) {
     return (TIFR & _BV(TOV0)) ? 1U : 0U;
 }
 
-inline bool stIsAlarmSet(void) {
-    return TIMSK & _BV(OCIE0A);
-}
+static inline bool stIsOCIntEnabled(void) { return TIMSK & _BV(OCIE0A); }
 
-inline SysTimePoint stNowI(void) {
-    return ((uint16_t)(sysTime.timeH + OVFIntFlag()) << 8) | TCNT0;
+inline bool stIsAlarmSet(void) {
+    return stIsOCIntEnabled();
 }
 
 ISR(TIMER0_OVF_vect) {
+    debugPinOn(DEBUG_PIN_0);
+//    wdt_reset();
     stackCheck();
     ++sysTime.timeH;
+    debugPinOff(DEBUG_PIN_0);
 }
 
 ISR(TIMER0_COMPA_vect) {
-//    debugPin(true);
+    debugPinOn(DEBUG_PIN_0);
     disableOCInt();
     stackCheck();
     if (sysTime.timeH != sysTime.alarmH) {
@@ -75,32 +82,54 @@ ISR(TIMER0_COMPA_vect) {
     }
     Event e;
     e.type = evAlarm;
+    e.data = 0;
+//    debugPinOn(DEBUG_PIN_0);
     eqPutI(&e);
-//    debugPin(false);
-}
-
-void stInit(void) {
-    memset(&sysTime, 0, sizeof(SysTime));
-    sysTime.periodUs = ST_PERIOD_US;
-    TCNT0 = 0;
-    OCR0A = 0;
+//    debugPinOn(DEBUG_PIN_0);
+    debugPinOff(DEBUG_PIN_0);
 }
 
 void stEnableClock(void) {
     TCCR0B = (TCCR0B & ~ST_CS_MASK) | ST_CS_BITS;
-    TIMSK |= _BV(TOIE0);
+    enableOVFInt();
 }
 
 void stDisableClock() {
+    disableOVFInt();
+    clearOVFIntFlag();
     TCCR0B = (TCCR0B & ~ST_CS_MASK);
+}
+
+void stInit(void) {
+    stDisableClock();
+    TCNT0 = 0;
+    setOCRegister(0);
+//    OCR0B = 255;
+//    TCCR0A |= _BV(COM0B0);
+    disableOVFInt();
+    clearOVFIntFlag();
+    disableOCInt();
+    clearOCIntFlag();
+    memset(&sysTime, 0, sizeof(SysTime));
+    sysTime.periodUs = ST_PERIOD_US;
+}
+
+inline SysTimePoint stNowI(void) {
+    return ((uint16_t)(sysTime.timeH + OVFIntFlag()) << 8) | TCNT0;
 }
 
 SysTimePoint stNow(void) {
     SysTimePoint retval;
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
+    ATOMIC() {
         retval = stNowI();
     }
     return retval;
+}
+
+void stSetAlarmAt(SysTimePoint t) {
+    ATOMIC() {
+        stSetAlarmAtI(t);
+    }
 }
 
 void stSetAlarmAtI(SysTimePoint t) {
@@ -109,16 +138,17 @@ void stSetAlarmAtI(SysTimePoint t) {
     // If we want the interrupt to occur at TCNT0 == N, we must set OCR0A = N - 1.
     // Note that setting OCR0A to current TCNT0 will not cause immediate interrupt.
     clearOCIntFlag();
-    OCR0A = (t & 0xffU) - 1U;
+    setOCRegister((t & 0xffU) - 1U);
     sysTime.alarmH = t >> 8U;
     debugTrace2(debugAlarmEnabled, t);
     enableOCInt();
 }
 
 void stCancelAlarm(void) {
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
+    ATOMIC() {
         if (stIsAlarmSet()) {
             disableOCInt();
+            clearOCIntFlag();
             debugTrace2(debugAlarmDisabled, 0);
         }
     }

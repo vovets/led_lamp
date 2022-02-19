@@ -1,4 +1,5 @@
-#include "clocks_etc.h"
+#include <lib/parameters.h>
+#include <lib/clocks_etc.h>
 #include <lib/macro_utils.h>
 
 #include <avr/io.h>

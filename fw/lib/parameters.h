@@ -1,7 +1,17 @@
 #pragma once
 
-#ifdef PARAMETERS_FILE_PATH
-#include PARAMETERS_FILE_PATH
+#include <custom_parameters.h>
+
+#ifndef F_CPU
+#define F_CPU 8000000
+#endif
+
+#ifndef ST_FREQ_DIVIDER
+#define ST_FREQ_DIVIDER 1024
+#endif
+
+#ifndef TM_ALARM_MIN_DELAY
+#define TM_ALARM_MIN_DELAY 2
 #endif
 
 #ifndef ADC_FILTER_BUFFER_SIZE_LOG
@@ -50,4 +60,25 @@
 
 #ifndef PWMA_TICK_TIME_MS
 #define PWMA_TICK_TIME_MS 20U
+#endif
+
+#ifndef DEBUG_TRACE_BUFFER_SIZE
+// if set to 0 debugTrace2 calls are eliminated
+#define DEBUG_TRACE_BUFFER_SIZE 10
+#endif
+
+#ifndef DEBUG_PIN_0
+#define DEBUG_PIN_0 PB0
+#endif
+
+#ifndef DEBUG_PIN_1
+#define DEBUG_PIN_1 PB2
+#endif
+
+#ifndef DEBUG_PIN_0_ENABLED
+#define DEBUG_PIN_0_ENABLED 0
+#endif
+
+#ifndef DEBUG_PIN_1_ENABLED
+#define DEBUG_PIN_1_ENABLED 0
 #endif

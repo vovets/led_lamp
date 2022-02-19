@@ -8,3 +8,4 @@ gerber/
 cmake-build-*/
 .idea/
 build/
+saleae/

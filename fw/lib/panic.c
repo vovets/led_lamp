@@ -1,8 +1,10 @@
+#include <lib/panic.h>
+
 #include <util/delay_basic.h>
 #include <avr/interrupt.h>
 #include <avr/cpufunc.h>
 
-void abort() {
+void panic(void) {
     cli();
     _NOP();
     while (1) {

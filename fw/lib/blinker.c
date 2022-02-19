@@ -1,14 +1,12 @@
 #include <lib/blinker.h>
-#include "debug.h"
-
-#include <assert.h>
+#include <lib/assert_.h>
 
 #include <avr/cpufunc.h>
 
 
 static void blinkerTimerExpired(void* arg) {
     Blinker* blinker = (Blinker*)arg;
-    assert(blinker->state);
+    assert_(blinker->state);
     blinker->state(blinker);
 }
 
@@ -48,20 +46,20 @@ void blinkerStart(Blinker* blinker, BlinkerFunc func, void* arg) {
 }
 
 void blinkerStop(Blinker* blinker) {
+    blinker->state = 0;
     if (tmIsTimerSet(&blinker->timer)) {
         tmCancelTimer(&blinker->timer);
-        blinker->state = 0;
         blinker->ledFunc(blinker->mode == BlinkerModeOnThenOff ? false : true);
     }
 }
 
 void blinkerSetup(Blinker* blinker, BlinkerMode mode, uint8_t iterations, SysTimeDelta state_0_time, SysTimeDelta state_1_time, BlinkerLedFunc ledFunc) {
-    assert(blinker);
-    assert(ledFunc);
+    assert_(blinker);
+    assert_(ledFunc);
     blinker->mode = mode;
     blinker->iterations = iterations;
-    blinker->state_0_time = state_0_time;
-    blinker->state_1_time = state_1_time;
+    blinker->state_0_time = state_0_time > 0 ? state_0_time : 1;
+    blinker->state_1_time = state_1_time > 0 ? state_1_time : 1;
     blinker->ledFunc = ledFunc;
 }
 

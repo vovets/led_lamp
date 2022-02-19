@@ -1,14 +1,12 @@
 #include <lib/parameters.h>
-#include "debouncer.h"
-#include "timers.h"
-#include "button.h"
+#include <lib/debouncer.h>
+#include <lib/timers.h>
+#include <lib/button.h>
 #include <lib/stack_check.h>
-#include "debug.h"
-#include "event.h"
+#include <lib/debug.h>
+#include <lib/event.h>
 #include <lib/event_queue.h>
-#include "loop.h"
-
-#include <assert.h>
+#include <lib/loop.h>
 
 #include <avr/io.h>
 #include <util/atomic.h>
@@ -26,7 +24,7 @@ static void dbnTimerExpired(void*);
 static void dbnStartScan(bool state);
 static void dbnStopScan(void);
 
-void handlePinChange(const Event* e) {
+void handlePinChange(Event* e) {
     dbnStartScan(btnRead());
     dbnEnable();
 }
@@ -36,13 +34,14 @@ static bool dbnIsScanActive(void) {
 }
 
 void dbnEnable(void) {
-    GIFR |= _BV(PCIF);
+    // note use of '=' instead of '|="'
+    GIFR = _BV(PCIF);
     GIMSK |= _BV(PCIE);
 }
 
 void dbnDisable(void) {
     GIMSK &= ~_BV(PCIE);
-    GIFR |= _BV(PCIF);
+    GIFR = _BV(PCIF);
 }
 
 static inline void dbnSetTimer(void) {
@@ -87,5 +86,6 @@ ISR(PCINT0_vect) {
     dbnDisable();
     Event e;
     e.type = evPinChange;
+    e.data = 0;
     eqPutI(&e);
 }

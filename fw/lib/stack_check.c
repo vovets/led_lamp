@@ -4,8 +4,8 @@
 
 __attribute__((naked,section(".init3")))
 void fillStack(void) {
-    register char* ptr;
-    for (ptr = &__heap_end; ptr < (char*)RAMEND; ++ptr) {
-        *ptr = 0x55;
-    }
+    __heap_end[0] = 0x55U;
+    __heap_end[1] = 0x55U;
+    __heap_end[2] = 0x55U;
+    __heap_end[3] = 0x55U;
 }

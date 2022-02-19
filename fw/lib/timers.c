@@ -1,16 +1,16 @@
-#include "timers.h"
+#include <lib/parameters.h>
+#include <lib/timers.h>
 #include <lib/sys_time.h>
-#include "debug.h"
-#include "loop.h"
+#include <lib/debug.h>
+#include <lib/assert_.h>
+#include <lib/loop.h>
+#include <lib/macro_utils.h>
 
 #include <util/atomic.h>
 #include <avr/cpufunc.h>
 
-#include <assert.h>
-
 
 #define ST_TIMER_MIN_DELAY 1
-#define TM_ALARM_MIN_DELAY 2
 
 static TimerList timers;
 
@@ -34,7 +34,7 @@ void tmSetAlarm(void) {
         return;
     }
 
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
+    ATOMIC() {
         SysTimePoint now = stNowI();
         SysTimeDelta nowFromBase = now - timers.base;
         SysTimeDelta firstTimerDelta = timers.first->delta;
@@ -49,8 +49,8 @@ void tmSetAlarm(void) {
 }
 
 void tmSetTimer(Timer* timer, SysTimeDelta delay, TimerFunc func, void* arg) {
-    assert(func);
-    assert(!timer->func);
+    assert_(func);
+    assert_(!timer->func);
     if (delay < ST_TIMER_MIN_DELAY) { delay = ST_TIMER_MIN_DELAY; }
 
     SysTimePoint now = stNow();
@@ -61,21 +61,27 @@ void tmSetTimer(Timer* timer, SysTimeDelta delay, TimerFunc func, void* arg) {
     debugTrace2(debugTimerSet, (uintptr_t)timer);
 }
 
-void handleAlarm(const Event* e) {
+void tmHandleAlarm(Event* e) {
+//    debugPinOn(DEBUG_PIN_0);
     SysTimePoint now = stNow();
     Timer* expired = tlRebase(&timers, now);
     while (expired) {
         debugTrace2(debugTimerExpired, (uintptr_t)expired);
         TimerFunc f = expired->func;
         void* arg = expired->arg;
+        Timer* next = expired->next;
         expired->func = NULL;
-        expired = expired->next;
+        expired->next = NULL;
+        expired->arg = NULL;
+        expired = next;
+
         // f can be NULL if timer was canceled during
         // execution of another timer func in some previous iteration of this loop
         if (f) {
             f(arg);
         }
     }
+//    debugPinOff(DEBUG_PIN_0);
 }
 
 bool tmIsTimerSet(Timer* timer) {
@@ -83,7 +89,7 @@ bool tmIsTimerSet(Timer* timer) {
 }
 
 void tmCancelTimer(Timer* timer) {
-    assert(timer->func);
+    assert_(timer->func);
     timer->func = 0;
     tlDelete(&timers, timer);
     debugTrace2(debugTimerCancel, (uintptr_t)timer);

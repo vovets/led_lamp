@@ -1,0 +1,7 @@
+#pragma once
+
+#define DEBUG_PIN PB0
+#define DEBUG_PIN_ENABLED 1
+#define DEBUG_TRACE_BUFFER_SIZE 0
+#define F_CPU 8000000
+#define ST_FREQ_DIVIDER 1024

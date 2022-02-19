@@ -1,8 +1,8 @@
-#include "timer_list.h"
-#include "sys_time.h"
+#include <lib/timer_list.h>
+#include <lib/sys_time.h>
+#include <lib/assert_.h>
 
 #include <stddef.h>
-#include <assert.h>
 
 
 void tlInit(TimerList* tl) {
@@ -124,10 +124,10 @@ void tlCheckConsistency(const TimerList* tl) {
     const Timer* c = tl->first;
     const Timer* prev = NULL;
     while (c) {
-        assert(c->prev == prev);
-        assert(c->func);
+        assert_(c->prev == prev);
+        assert_(c->func);
         prev = c;
         c = c->next;
     }
-    assert(tl->last == prev);
+    assert_(tl->last == prev);
 }
